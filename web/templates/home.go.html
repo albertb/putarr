@@ -1,0 +1,40 @@
+{{define "home"}}
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Putarr</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <script src="https://unpkg.com/htmx.org@2.0.4"
+        integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+"
+        crossorigin="anonymous"></script>
+
+</head>
+
+<body>
+    <main class="container">
+        <header>
+            <nav>
+                <ul>
+                    <li>
+                        <h1>Transfers</h1>
+                    </li>
+                </ul>
+                <ul>
+                    <li>
+                        <button hx-target="#transfers" hx-get="/transfers">Refresh</button>
+                    </li>
+                </ul>
+            </nav>
+        </header>
+
+        <div id="transfers" hx-trigger="load" hx-get="/transfers" hx-indicator="#spinner"></div>
+        <div id="spinner" aria-busy="true" class="htmx-indicator"></div>
+    </main>
+</body>
+
+</html>
+{{end}}

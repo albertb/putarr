@@ -1,0 +1,31 @@
+{{define "transfers"}}
+{{range .}}
+<article>
+    <header>
+        <strong>{{.Title}}</strong>
+    </header>
+    <p>{{.Status}}</p>
+    <progress value={{.PercentDone}} max=100></progress>
+
+    {{if gt (len .Imports) 1}}
+    <details>
+        <summary>{{len .Imports}} imports</summary>
+        {{range .Imports}}
+            <li>{{.Label}}</li>
+        {{end}}
+    </details>
+    {{else}}
+        {{range .Imports}}
+            <li>{{.Label}}</li>
+        {{end}}
+    {{end}}
+
+    <footer>
+        {{range .Buttons}}
+            <a href="{{.URL}}"><button>{{.Label}}</button></a>
+        {{end}}
+    </footer>
+</article>
+{{end}}
+
+{{end}}
