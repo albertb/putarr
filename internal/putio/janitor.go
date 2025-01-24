@@ -47,10 +47,12 @@ func (j *Janitor) cleanup() {
 	}
 
 	for _, transfer := range transfers {
-		err = j.putioClient.putioClient.Files.Delete(ctx, transfer.FileID)
-		if err != nil {
-			log.Println("failed to delete file from Put.io:", err)
-			continue
+		if transfer.FileID != 0 {
+			err = j.putioClient.putioClient.Files.Delete(ctx, transfer.FileID)
+			if err != nil {
+				log.Println("failed to delete file from Put.io:", err)
+				continue
+			}
 		}
 		err = j.putioClient.putioClient.Transfers.Cancel(ctx, transfer.ID)
 		if err != nil {
