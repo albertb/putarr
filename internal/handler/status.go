@@ -38,8 +38,14 @@ func (h *statusHandler) Register(mux *http.ServeMux) {
 }
 
 func (h *statusHandler) home(w http.ResponseWriter, r *http.Request) {
-	tmpl, err := template.ParseFS(web.Templates, "templates/home.go.html")
-	//tmpl, err := template.ParseFiles("web/templates/home.go.html")
+	var tmpl *template.Template
+	var err error
+	if h.options.Development {
+		tmpl, err = template.ParseFiles("web/templates/home.go.html")
+	} else {
+		tmpl, err = template.ParseFS(web.Templates, "templates/home.go.html")
+	}
+
 	if err != nil {
 		log.Println("failed to load templates", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -62,8 +68,13 @@ func (h *statusHandler) transfers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tmpl, err := template.ParseFS(web.Templates, "templates/transfers.go.html")
-	//tmpl, err := template.ParseFiles("web/templates/transfers.go.html")
+	var tmpl *template.Template
+	if h.options.Development {
+		tmpl, err = template.ParseFiles("web/templates/transfers.go.html")
+	} else {
+		tmpl, err = template.ParseFS(web.Templates, "templates/transfers.go.html")
+	}
+
 	if err != nil {
 		log.Println("failed to load templates", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

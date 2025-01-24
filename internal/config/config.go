@@ -10,8 +10,9 @@ import (
 )
 
 type Options struct {
-	Config  Config
-	Verbose bool // Whether to print verbose logs
+	Config      Config
+	Verbose     bool // Whether to print verbose logs
+	Development bool // Whether to run in development mode
 }
 
 type Config struct {

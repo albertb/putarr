@@ -22,6 +22,7 @@ func main() {
 	addr := flag.String("addr", ":9091", "The network address to listen on")
 	configPath := flag.String("config", defaultConfigPath, "Location of the config file")
 	verbose := flag.Bool("v", false, "Whether to print verbose logs")
+	dev := flag.Bool("dev", false, "Whether to run in development mode")
 
 	flag.Parse()
 
@@ -37,8 +38,9 @@ func main() {
 	}
 
 	options := &config.Options{
-		Config:  *cfg,
-		Verbose: *verbose,
+		Config:      *cfg,
+		Verbose:     *verbose,
+		Development: *dev,
 	}
 
 	if err := internal.Run(*addr, options); err != nil {
