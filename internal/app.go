@@ -20,7 +20,7 @@ import (
 func Run(addr string, options *config.Options) error {
 	ctx := context.Background()
 
-	putioClient := newPutDotIoClient(options, ctx)
+	putioClient := newPutDotIoClient(ctx, options)
 
 	myPutioClient := myputio.NewClient(options, putioClient)
 	arrClient := arr.New(options,
@@ -54,7 +54,7 @@ func Run(addr string, options *config.Options) error {
 	return http.ListenAndServe(addr, mux)
 }
 
-func newPutDotIoClient(options *config.Options, ctx context.Context) *putio.Client {
+func newPutDotIoClient(ctx context.Context, options *config.Options) *putio.Client {
 	// TODO oob flow, see: https://github.com/davidchalifoux/kaput-cli/blob/main/src/put/oob.rs
 	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: options.Config.Putio.OAuthToken})
 	oauthClient := oauth2.NewClient(ctx, tokenSource)
