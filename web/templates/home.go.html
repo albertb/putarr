@@ -14,25 +14,30 @@
 
 </head>
 
-<body>
-    <main class="container">
-        <header>
-            <nav>
-                <ul>
-                    <li>
-                        <h1>Transfers</h1>
-                    </li>
-                </ul>
-                <ul>
-                    <li>
-                        <button hx-target="#transfers" hx-get="/transfers">Refresh</button>
-                    </li>
-                </ul>
-            </nav>
-        </header>
+<body class="container">
+    <header>
+        <nav>
+            <ul>
+                <li>
+                    <hgroup>
+                        <h1>Putarr</h1>
+                        <p>View your transfers</p>
+                    </hgroup>
+                </li>
+            </ul>
+            <ul>
+                <li>
+                    <span id="spinner" aria-busy="true" class="htmx-indicator"></span>
+                    <button hx-target="#transfers" hx-get="/transfers" hx-indicator="#spinner">
+                        Refresh
+                    </button>
+                </li>
+            </ul>
+        </nav>
+    </header>
 
+    <main>
         <div id="transfers" hx-trigger="load" hx-get="/transfers" hx-indicator="#spinner"></div>
-        <div id="spinner" aria-busy="true" class="htmx-indicator"></div>
     </main>
 </body>
 
