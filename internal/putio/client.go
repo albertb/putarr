@@ -1,7 +1,10 @@
 package putio
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha1"
+	"encoding/base32"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/albertb/putarr/internal/config"
+	"github.com/jackpal/bencode-go"
 	"github.com/putdotio/go-putio"
 )
 
@@ -145,8 +149,51 @@ func (c *Client) AddTransfer(ctx context.Context, url string, dir *string) (*Tra
 	}, nil
 }
 
-func (c *Client) UploadTorrent(ctx context.Context, torrent []byte, dir *string) (*Transfer, error) {
-	return nil, errors.New("TODO implement me")
+func (c *Client) UploadTorrent(ctx context.Context, file []byte, dir *string) (*Transfer, error) {
+	// We could upload the torrent directly to Put.io and it would work just fine, but we want to be able to add a
+	// callback URL to the transfer so we can identify it later. The Transfer API lets us add a callback URL, but it
+	// requires a magnet link instead of a torrent.
+
+	// Decode the torrent file and extract a dictionary of its fields.
+	decoded, err := bencode.Decode(bytes.NewReader(file))
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode torrent file: %w", err)
+	}
+	torrent, ok := decoded.(map[string]interface{})
+	if !ok {
+		return nil, errors.New("unable to parse torrent file")
+	}
+
+	// Calculate the info hash of the torrent and use it as the basis for the magnet link.
+	var buf bytes.Buffer
+	err = bencode.Marshal(&buf, torrent["info"])
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode torrent info: %w", err)
+	}
+	checksum := sha1.Sum(buf.Bytes())
+	magnet := "magnet:?xt=urn:btih:" + base32.StdEncoding.EncodeToString(checksum[:])
+
+	// Add the name and length of the torrent to the magnet link, if available.
+	if info, ok := torrent["info"].(map[string]interface{}); ok {
+		if name, ok := info["name"].(string); ok {
+			magnet += "&dn=" + url.QueryEscape(name)
+		}
+		if length, ok := info["length"].(int64); ok {
+			magnet += "&xl=" + fmt.Sprint(length)
+		}
+	}
+
+	// Add the tracker to the magnet link, if available.
+	if tracker, ok := torrent["announce"].(string); ok {
+		magnet += "&tr=" + url.QueryEscape(tracker)
+	}
+
+	if c.options.Verbose {
+		log.Println("converted torrent file to magnet link:", magnet)
+	}
+
+	// Add the transfer to Put.io using the Transfer API.
+	return c.AddTransfer(ctx, magnet, dir)
 }
 
 func (c *Client) RemoveTransfer(ctx context.Context, alsoDeleteFiles bool, ids []int64) error {

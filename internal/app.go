@@ -23,6 +23,7 @@ func Run(addr string, options *config.Options) error {
 	putioClient := newPutDotIoClient(ctx, options)
 
 	myPutioClient := myputio.NewClient(options, putioClient)
+
 	arrClient := arr.New(options,
 		func() *radarr.Radarr {
 			if options.Config.Radarr == nil {

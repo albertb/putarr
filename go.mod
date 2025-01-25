@@ -8,6 +8,7 @@ require (
 )
 
 require (
+	github.com/jackpal/bencode-go v1.0.2
 	golift.io/starr v1.0.1-0.20240919022647-115b105a3a48
 	gopkg.in/yaml.v3 v3.0.1
 )
