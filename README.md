@@ -47,14 +47,15 @@ putio:
 
     # The ID of the parent directory where to store downloaded files. When this is unset files 
     # are saved in the root. When this is -1, the default directory configured in the Put.io
-    # account is used. You can find the ID of a directory in the URL when browing your files
-    # on Put.io.
+    # account is used. You can find the ID of a directory in the URL when browsing your files
+    # on the Put.io website.
     parent_dir_id: your_parent_dir_id
 
     # How often to clean up the transfers and files of successfully imported media.
     janitor_interval: 1h
 
-    # The friend token used to identify the transfers belonging to this instance of Putarr.
+    # The friend token used to identify the transfers belonging to this instance of Putarr
+    # when multiple instances are running on the same Put.io account.
     friend_token: friend_token
 
 radarr:
