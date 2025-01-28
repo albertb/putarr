@@ -20,31 +20,9 @@ import (
 func Run(addr string, options *config.Options) error {
 	ctx := context.Background()
 
-	putioClient := newPutDotIoClient(ctx, options)
-
+	putioClient := newPutioClient(ctx, options)
 	myPutioClient := myputio.NewClient(options, putioClient)
-
-	arrClient := arr.New(options,
-		func() *radarr.Radarr {
-			if options.Config.Radarr == nil {
-				return nil
-			}
-			arrConfig := starr.New(options.Config.Radarr.APIKey, options.Config.Radarr.URL, 0)
-			if options.Verbose {
-				arrConfig.Client.Transport = &timingRoundTripper{arrConfig.Client.Transport}
-			}
-			return radarr.New(arrConfig)
-		}(),
-		func() *sonarr.Sonarr {
-			if options.Config.Radarr == nil {
-				return nil
-			}
-			arrConfig := starr.New(options.Config.Sonarr.APIKey, options.Config.Sonarr.URL, 0)
-			if options.Verbose {
-				arrConfig.Client.Transport = &timingRoundTripper{arrConfig.Client.Transport}
-			}
-			return sonarr.New(arrConfig)
-		}())
+	arrClient := newArrClient(options)
 
 	mux := handler.New(options, myPutioClient, arrClient)
 
@@ -55,8 +33,7 @@ func Run(addr string, options *config.Options) error {
 	return http.ListenAndServe(addr, mux)
 }
 
-func newPutDotIoClient(ctx context.Context, options *config.Options) *putio.Client {
-	// TODO oob flow, see: https://github.com/davidchalifoux/kaput-cli/blob/main/src/put/oob.rs
+func newPutioClient(ctx context.Context, options *config.Options) *putio.Client {
 	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: options.Config.Putio.OAuthToken})
 	oauthClient := oauth2.NewClient(ctx, tokenSource)
 
@@ -65,6 +42,32 @@ func newPutDotIoClient(ctx context.Context, options *config.Options) *putio.Clie
 	}
 
 	return putio.NewClient(oauthClient)
+}
+
+func newArrClient(options *config.Options) *arr.Client {
+	radarrClient := func() *radarr.Radarr {
+		if options.Config.Radarr == nil {
+			return nil
+		}
+		arrConfig := starr.New(options.Config.Radarr.APIKey, options.Config.Radarr.URL, 0)
+		if options.Verbose {
+			arrConfig.Client.Transport = &timingRoundTripper{arrConfig.Client.Transport}
+		}
+		return radarr.New(arrConfig)
+	}()
+
+	sonarrClient := func() *sonarr.Sonarr {
+		if options.Config.Sonarr == nil {
+			return nil
+		}
+		arrConfig := starr.New(options.Config.Sonarr.APIKey, options.Config.Sonarr.URL, 0)
+		if options.Verbose {
+			arrConfig.Client.Transport = &timingRoundTripper{arrConfig.Client.Transport}
+		}
+		return sonarr.New(arrConfig)
+	}()
+
+	return arr.New(options, radarrClient, sonarrClient)
 }
 
 type timingRoundTripper struct {

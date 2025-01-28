@@ -17,6 +17,45 @@ type Client struct {
 	sonarrClient *sonarr.Sonarr
 }
 
+func New(options *config.Options, radarrClient *radarr.Radarr, sonarrClient *sonarr.Sonarr) *Client {
+	return &Client{
+		options:      options,
+		radarrClient: radarrClient,
+		sonarrClient: sonarrClient,
+	}
+}
+
+// RadarrStatus represents the status of all items associated with a single transfer.
+type RadarrStatus struct {
+	StatusByMovieID map[int64]*RadarrItemStatus
+}
+
+// In-progress (queue) and completed (history) imports related to single transfer.
+type RadarrItemStatus struct {
+	*radarr.QueueRecord
+	*radarr.HistoryRecord
+	*radarr.Movie
+}
+
+// IsDone checks whether every item of associated with a transfer has been imported.
+func (s RadarrStatus) IsDone() bool {
+	for _, status := range s.StatusByMovieID {
+		if status.QueueRecord != nil {
+			return false
+		}
+	}
+	return true
+}
+
+func (s RadarrItemStatus) GetMovieID() int64 {
+	if s.QueueRecord != nil {
+		return s.QueueRecord.MovieID
+	} else if s.HistoryRecord != nil {
+		return s.HistoryRecord.MovieID
+	}
+	return 0
+}
+
 // In-progress (queue) and completed (history) imports related to single transfer.
 type SonarrStatus struct {
 	StatusByEpisodeID map[int64]*SonarrItemStatus
@@ -44,43 +83,6 @@ func (s SonarrItemStatus) GetEpisodeID() int64 {
 		return s.HistoryRecord.EpisodeID
 	}
 	return 0
-}
-
-type RadarrStatus struct {
-	StatusByMovieID map[int64]*RadarrItemStatus
-}
-
-// In-progress (queue) and completed (history) imports related to single transfer.
-type RadarrItemStatus struct {
-	*radarr.QueueRecord
-	*radarr.HistoryRecord
-	*radarr.Movie
-}
-
-func (s RadarrStatus) IsDone() bool {
-	for _, status := range s.StatusByMovieID {
-		if status.QueueRecord != nil {
-			return false
-		}
-	}
-	return true
-}
-
-func (s RadarrItemStatus) GetMovieID() int64 {
-	if s.QueueRecord != nil {
-		return s.QueueRecord.MovieID
-	} else if s.HistoryRecord != nil {
-		return s.HistoryRecord.MovieID
-	}
-	return 0
-}
-
-func New(options *config.Options, radarrClient *radarr.Radarr, sonarrClient *sonarr.Sonarr) *Client {
-	return &Client{
-		options:      options,
-		radarrClient: radarrClient,
-		sonarrClient: sonarrClient,
-	}
 }
 
 func (c *Client) GetRadarrImportStatus(ctx context.Context) (map[int64]*RadarrStatus, error) {
