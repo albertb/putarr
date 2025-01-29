@@ -45,27 +45,23 @@ func newPutioClient(ctx context.Context, options *config.Options) *putio.Client 
 }
 
 func newArrClient(options *config.Options) *arr.Client {
-	radarrClient := func() *radarr.Radarr {
-		if options.Config.Radarr == nil {
-			return nil
-		}
+	var radarrClient *radarr.Radarr
+	if options.Config.Radarr != nil {
 		arrConfig := starr.New(options.Config.Radarr.APIKey, options.Config.Radarr.URL, 0)
 		if options.Verbose {
 			arrConfig.Client.Transport = &timingRoundTripper{arrConfig.Client.Transport}
 		}
-		return radarr.New(arrConfig)
-	}()
+		radarrClient = radarr.New(arrConfig)
+	}
 
-	sonarrClient := func() *sonarr.Sonarr {
-		if options.Config.Sonarr == nil {
-			return nil
-		}
+	var sonarrClient *sonarr.Sonarr
+	if options.Config.Sonarr != nil {
 		arrConfig := starr.New(options.Config.Sonarr.APIKey, options.Config.Sonarr.URL, 0)
 		if options.Verbose {
 			arrConfig.Client.Transport = &timingRoundTripper{arrConfig.Client.Transport}
 		}
-		return sonarr.New(arrConfig)
-	}()
+		sonarrClient = sonarr.New(arrConfig)
+	}
 
 	return arr.New(options, radarrClient, sonarrClient)
 }

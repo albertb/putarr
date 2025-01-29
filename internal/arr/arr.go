@@ -120,8 +120,7 @@ func (c *Client) GetRadarrImportStatus(ctx context.Context) (map[int64]*RadarrSt
 
 		status, ok := result[id]
 		if !ok {
-			status = &RadarrStatus{
-				StatusByMovieID: map[int64]*RadarrItemStatus{}}
+			status = &RadarrStatus{StatusByMovieID: map[int64]*RadarrItemStatus{}}
 			result[id] = status
 		}
 
@@ -141,8 +140,7 @@ func (c *Client) GetRadarrImportStatus(ctx context.Context) (map[int64]*RadarrSt
 
 		status, ok := result[id]
 		if !ok {
-			status = &RadarrStatus{
-				StatusByMovieID: map[int64]*RadarrItemStatus{}}
+			status = &RadarrStatus{StatusByMovieID: map[int64]*RadarrItemStatus{}}
 			result[id] = status
 		}
 
@@ -209,8 +207,7 @@ func (c *Client) GetSonarrImportStatus(ctx context.Context) (map[int64]*SonarrSt
 
 		status, ok := result[id]
 		if !ok {
-			status = &SonarrStatus{
-				StatusByEpisodeID: map[int64]*SonarrItemStatus{}}
+			status = &SonarrStatus{StatusByEpisodeID: map[int64]*SonarrItemStatus{}}
 			result[id] = status
 		}
 
