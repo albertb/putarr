@@ -56,17 +56,19 @@ func (s RadarrItemStatus) GetMovieID() int64 {
 	return 0
 }
 
-// In-progress (queue) and completed (history) imports related to single transfer.
+// SonarrStatus represents the status of all items associated with a single transfer.
 type SonarrStatus struct {
 	StatusByEpisodeID map[int64]*SonarrItemStatus
 }
 
+// In-progress (queue) and completed (history) imports related to single transfer.
 type SonarrItemStatus struct {
 	*sonarr.QueueRecord
 	*sonarr.HistoryRecord
 	*sonarr.Episode
 }
 
+// IsDone checks whether every item of associated with a transfer has been imported.
 func (s SonarrStatus) IsDone() bool {
 	for _, status := range s.StatusByEpisodeID {
 		if status.QueueRecord != nil {

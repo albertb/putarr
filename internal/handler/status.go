@@ -33,7 +33,7 @@ func newStatusHandler(options *config.Options, putioClient *putio.Client, arrCli
 }
 
 func (h *statusHandler) Register(mux *http.ServeMux) {
-	mux.HandleFunc("GET /", h.home)
+	mux.HandleFunc("GET /{$}", h.home)
 	mux.HandleFunc("GET /transfers", h.transfers)
 }
 

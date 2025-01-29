@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -68,6 +69,40 @@ func Read(reader io.Reader) (*Config, error) {
 }
 
 func (c Config) validate() (*Config, error) {
-	// TODO do actual validation
+	if c.Transmission.Username == "" {
+		return nil, errors.New("transmission username is required")
+	}
+	if c.Transmission.Password == "" {
+		return nil, errors.New("transmission password is required")
+	}
+	if c.Transmission.DownloadDir == "" {
+		return nil, errors.New("transmission download_dir is required")
+	}
+
+	if c.Putio.OAuthToken == "" {
+		return nil, errors.New("putio oauth_token is required")
+	}
+
+	if c.Radarr == nil && c.Sonarr == nil {
+		return nil, errors.New("either radarr or sonarr configuration is required")
+	}
+
+	if c.Radarr != nil {
+		if c.Radarr.URL == "" {
+			return nil, errors.New("radarr url is required")
+		}
+		if c.Radarr.APIKey == "" {
+			return nil, errors.New("radarr api_key is required")
+		}
+	}
+
+	if c.Sonarr != nil {
+		if c.Sonarr.URL == "" {
+			return nil, errors.New("sonarr url is required")
+		}
+		if c.Sonarr.APIKey == "" {
+			return nil, errors.New("sonarr api_key is required")
+		}
+	}
 	return &c, nil
 }
