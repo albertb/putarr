@@ -88,6 +88,61 @@ func (h *statusHandler) transfers(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (h *statusHandler) fetchTransferData(ctx context.Context) ([]putio.Transfer, map[int64]*arr.RadarrStatus, map[int64]*arr.SonarrStatus, error) {
+	errs := make(chan error, 3)
+
+	transfers := []putio.Transfer{}
+	go func() {
+		var err error
+		transfers, err = h.putioClient.GetTransfers(ctx)
+		if err != nil {
+			errs <- fmt.Errorf("failed to get transfers from Put.io: %w", err)
+			return
+		}
+		errs <- nil
+	}()
+
+	radarrStatus := map[int64]*arr.RadarrStatus{}
+	go func() {
+		var err error
+		radarrStatus, err = h.arrClient.GetRadarrImportStatus(ctx)
+		if err != nil {
+			errs <- fmt.Errorf("failed to get imports from radarr: %w", err)
+			return
+		}
+		err = h.arrClient.GetRadarrImportMovie(ctx, radarrStatus)
+		if err != nil {
+			errs <- fmt.Errorf("failed to get movie details from radarr: %w", err)
+			return
+		}
+		errs <- nil
+	}()
+
+	sonarrStatus := map[int64]*arr.SonarrStatus{}
+	go func() {
+		sonarrStatus, err := h.arrClient.GetSonarrImportStatus(ctx)
+		if err != nil {
+			errs <- fmt.Errorf("failed to get imports from sonarr: %w", err)
+			return
+		}
+
+		err = h.arrClient.GetSonarrImportEpisodes(ctx, sonarrStatus)
+		if err != nil {
+			errs <- fmt.Errorf("failed to get episode details from sonarr: %w", err)
+			return
+		}
+		errs <- nil
+	}()
+
+	for i := 0; i < 3; i++ {
+		if err := <-errs; err != nil {
+			return nil, nil, nil, err
+		}
+	}
+
+	return transfers, radarrStatus, sonarrStatus, nil
+}
+
 type transferStatus struct {
 	Title       string
 	Status      string
@@ -112,29 +167,9 @@ func (a byLabel) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a byLabel) Less(i, j int) bool { return a[i].Label < a[j].Label }
 
 func (h *statusHandler) assembleTransferList(ctx context.Context) ([]transferStatus, error) {
-	transfers, err := h.putioClient.GetTransfers(ctx)
+	transfers, radarrStatus, sonarrStatus, err := h.fetchTransferData(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get transfers from Put.io: %w", err)
-	}
-
-	radarrStatus, err := h.arrClient.GetRadarrImportStatus(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get imports from radarr: %w", err)
-	}
-
-	err = h.arrClient.GetRadarrImportMovie(ctx, radarrStatus)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get movie details from radarr: %w", err)
-	}
-
-	sonarrStatus, err := h.arrClient.GetSonarrImportStatus(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get imports from sonarr: %w", err)
-	}
-
-	err = h.arrClient.GetSonarrImportEpisodes(ctx, sonarrStatus)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get episode details from sonarr: %w", err)
+		return nil, err
 	}
 
 	var result []transferStatus

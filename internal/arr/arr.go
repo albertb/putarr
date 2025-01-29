@@ -3,6 +3,7 @@ package arr
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/albertb/putarr/internal/config"
 	"github.com/albertb/putarr/internal/transmission"
@@ -162,15 +163,35 @@ func (c *Client) GetRadarrImportMovie(ctx context.Context, statuses map[int64]*R
 		return nil
 	}
 
+	wg := sync.WaitGroup{}
+	errs := make(chan error, 10)
+
 	for _, status := range statuses {
 		for _, item := range status.StatusByMovieID {
-			movie, err := c.radarrClient.GetMovieByIDContext(ctx, item.GetMovieID())
-			if err != nil {
-				return fmt.Errorf("failed to get movie details: %w", err)
-			}
-			item.Movie = movie
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				movie, err := c.radarrClient.GetMovieByIDContext(ctx, item.GetMovieID())
+				if err != nil {
+					errs <- fmt.Errorf("failed to get movie details: %w", err)
+					return
+				}
+				item.Movie = movie
+				errs <- nil
+			}()
 		}
 	}
+	go func() {
+		wg.Wait()
+		close(errs)
+	}()
+
+	for err := range errs {
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -250,13 +271,31 @@ func (c *Client) GetSonarrImportEpisodes(ctx context.Context, statuses map[int64
 		return nil
 	}
 
+	wg := sync.WaitGroup{}
+	errs := make(chan error, 10)
+
 	for _, status := range statuses {
 		for _, item := range status.StatusByEpisodeID {
-			episode, err := c.sonarrClient.GetEpisodeByIDContext(ctx, item.GetEpisodeID())
-			if err != nil {
-				return fmt.Errorf("failed to get episode details: %w", err)
-			}
-			item.Episode = episode
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				episode, err := c.sonarrClient.GetEpisodeByIDContext(ctx, item.GetEpisodeID())
+				if err != nil {
+					errs <- fmt.Errorf("failed to get episode details: %w", err)
+				}
+				item.Episode = episode
+				errs <- nil
+			}()
+		}
+	}
+	go func() {
+		wg.Wait()
+		close(errs)
+	}()
+
+	for err := range errs {
+		if err != nil {
+			return err
 		}
 	}
 
