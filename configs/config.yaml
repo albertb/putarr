@@ -1,0 +1,24 @@
+# Where to save downloaded files, from the point-of-view of Putarr.
+downloader:
+  dir: /downloads
+
+# Transmission configuration, this is required.
+transmission:
+  username: username # The username to access the Transmission API.
+  password: password # The password to access the Transmission API.
+  download_dir: /putarr # Where clients of the Transmission API can find downloaded files.
+
+# Put.io configuration, this is required.
+putio:
+  oauth_token: TOKEN123 # OAuth token to access Put.io.
+  parent_dir_id: 0 # The ID of the parent directory where transfers should be saved; 0 means to use the default, -1 is the root.
+  janitor_interval: 30m # How often to run the janitor that looks for completed transfers to cleanup.
+  friend_token: ab # When multiple instances of Putarrs run on the Put.io account, this token is used to establish transfer ownership.
+
+# Radarr and Sonarr configuration. At least one of these is required.
+radarr:
+  url: http://radarr # URL to the Radarr instance.
+  api_key: 123
+sonarr:
+  url: http://sonarr # URL to the Sonarr instance.
+  api_key: 456
