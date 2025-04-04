@@ -23,13 +23,13 @@ func NewPutioJanitor(arrClient *ArrClient, putioProxy *PutioProxy, downloader Do
 
 // RunAtInterval runs the janitor at the specified interval.
 func (j *PutioJanitor) RunAtInterval(ctx context.Context, interval time.Duration) {
-	ticker := time.Tick(interval)
+	ticker := time.NewTicker(interval)
 	go func() {
 		for {
 			if _, err := j.RunOnce(ctx); err != nil {
 				log.Println("failed to run janitor:", err)
 			}
-			<-ticker
+			<-ticker.C
 		}
 	}()
 }
@@ -51,8 +51,6 @@ func (j *PutioJanitor) RunOnce(ctx context.Context) ([]int64, error) {
 	if err != nil {
 		return completedTransferIDs, err
 	}
-
-	// TODO DOESNT WORK
 
 	// Find transfers with successful imports and no pending queue activities.
 	for _, transfer := range transfers {

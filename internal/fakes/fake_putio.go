@@ -72,7 +72,7 @@ func NewFakePutio() *FakePutio {
 	mux.Handle("GET /v2/config/{key}", handleJSONRPC(func(r *http.Request) (*putioConfigValue, error) {
 		key := r.PathValue("key")
 		if key == "" {
-			return nil, errors.New("missing key in URL")
+			return nil, fmt.Errorf("missing key in URL: %s", r.URL)
 		}
 		val, ok := fake.configs[key]
 		if !ok {
@@ -84,7 +84,7 @@ func NewFakePutio() *FakePutio {
 	mux.Handle("PUT /v2/config/{key}", handleJSONRPC(func(r *http.Request) (any, error) {
 		key := r.PathValue("key")
 		if key == "" {
-			return nil, errors.New("missing key in URL")
+			return nil, fmt.Errorf("missing key in URL: %s", r.URL)
 		}
 		var val putioConfigValue
 		err := json.NewDecoder(r.Body).Decode(&val)
@@ -100,7 +100,7 @@ func NewFakePutio() *FakePutio {
 		values := r.URL.Query()
 		id, ok := values["parent_id"]
 		if !ok {
-			return result, errors.New("missing parent_id in URL")
+			return result, fmt.Errorf("missing parent_id in URL: %s", r.URL)
 		}
 
 		parentID, err := strconv.ParseInt(id[0], 10, 64)
@@ -327,7 +327,7 @@ func (s *FakePutio) CreateFolder(parentID int64, name string) (putio.File, error
 func (s *FakePutio) SetTransferCompleted(id int64) (int64, error) {
 	transfer, ok := s.transfers[id]
 	if !ok {
-		return 0, errors.New("unknown transfer ID")
+		return 0, fmt.Errorf("unknown transfer ID: %d", id)
 	}
 	transfer.FinishedAt = &putioTime{Time: time.Now()}
 	transfer.PercentDone = 100
