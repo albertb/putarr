@@ -1,26 +1,32 @@
 # Putarr
-
-Putarr is a tool that lets you use Put.io to download your Radarr and Sonarr media.
+Putarr is a tool that integrates with Put.io to download and manage your Radarr and Sonarr media.
 
 ## Features
 
-- Put.io integration: Lets you use Put.io to torrent your media.
-- Transmission API: Exposes a Transmission API for ease of integration with Radarr and Sonarr. Adding support for
-  Lidarr and other *arrs would be trivial.
-- Janitor: Cleans up successful Put.io transfers once the media has been imported.
-- Downloader service: Downloads media locally from Put.io after a successful torrent transfer. Alternatively, mount your
-  Put.io account with [rclone](http://rclone.org/) and let Radarr/Sonarr/etc. read from the drive.
+- **Put.io Integration**: Uses Put.io to torrent your media seamlessly.
+- **Transmission API**: Exposes a Transmission API for easy integration with Radarr and Sonarr. Adding support for Lidarr and other *arrs would be straightforward.
+- **Janitor Service**: Automatically cleans up Put.io transfers after successful media import to avoid clutter.
+- **Downloader Service**: Downloads media locally from Put.io after a successful torrent transfer. Alternatively, mount your Put.io account with [rclone](http://rclone.org/) and let Radarr/Sonarr/etc. read directly from the drive.
 
 ## Installation
 
-Build and run a docker image.
+### Build the Docker Image
+Run the following command to build the Docker image:
 
 ```sh
 docker build -t putarr -f docker/Dockerfile .
 ```
 
+## Run the Docker Container
+Start the container with the following command:
+
 ```sh
-docker run -d -v $HOME/.config/putarr:/config -v /media/downloads:/downloads -p 9091:9091 --name putarr putarr -v
+docker run -d \
+  -v $HOME/.config/putarr:/config \
+  -v /media/downloads:/downloads \
+  -p 9091:9091 \
+  --name putarr \
+  putarr -v
 ```
 
 ## Configuration
@@ -29,47 +35,49 @@ Create a configuration file at `$HOME/.config/putarr/config.yaml` with the follo
 
 ```yaml
 downloader:
-  # When this field is set, download the media locally to this path once the Put.io transfer is finished.
-  # Leave this unset to skip the download and instead rely on a rclone mount to access your media.
+  # Path to download media locally after a Put.io torrent is done transferring. Leave unset to skip downloading and rely
+  # on an rclone mount instead.
   dir: /path/to/download
 
 transmission:
-    # This is the username/password that clients (e.g., Radarr/Sonarr) need to provide in
-    # order to communicate with Putarr.
-    username: your_username
-    password: your_password
+  # Credentials for clients (e.g., Radarr/Sonarr) to communicate with Putarr.
+  username: your_username
+  password: your_password
 
-    # The path where downloads are available from the point of view of Radarr/Sonarr. This is
-    # most likely the path where you've mounted your Put.io account using rclone, see later
-    # sections.
-    download_dir: /path/to/download
+  # Path where downloads are available from the perspective of Radarr/Sonarr. This is either the path you've configured
+  # in the downloader section, or the path where you've mounted your Put.io account using rclone.
+  download_dir: /path/to/download
 
 putio:
-    # OAuth token to communicate with Put.io.
-    oauth_token: your_oauth_token
+  # OAuth token for Put.io communication.
+  oauth_token: your_oauth_token
 
-    # The ID of the parent directory where to store downloaded files. When this is unset files 
-    # are saved in the root. When this is -1, the default directory configured in the Put.io
-    # account is used. You can find the ID of a directory in the URL when browsing your files
-    # on the Put.io website.
-    parent_dir_id: your_parent_dir_id
+  # ID of the parent directory for downloaded files. Use -1 for the default directory. Find directory IDs in the URL
+  # when browsing files on the Put.io website.
+  parent_dir_id: your_parent_dir_id
 
-    # How often to clean up the transfers and files of successfully imported media.
-    janitor_interval: 1h
+  # Interval for cleaning up successfully imported transfers from Put.io.
+  janitor_interval: 1h
 
-    # The friend token used to identify the transfers belonging to this instance of Putarr
-    # when multiple instances are running on the same Put.io account.
-    friend_token: friend_token
+  # Token to identify transfers for this Putarr instance when multiple instances use the same Put.io account.
+  friend_token: foo
 
 radarr:
-    url: http://localhost:7878
-    api_key: your_radarr_api_key
+  # Radarr API configuration.
+  url: http://localhost:7878
+  api_key: your_radarr_api_key
 
 sonarr:
-    url: http://localhost:8989
-    api_key: your_sonarr_api_key
+  # Sonarr API configuration.
+  url: http://localhost:8989
+  api_key: your_sonarr_api_key
 ```
 
-## Download client
+## Download Client Setup
+In Radarr and Sonarr, add a Transmission client with the username and password specified in the configuration file.
 
-In Radarr and Sonarr, add a Transmission client with the username/password from the configuration file.
+## Contributing
+Contributions are welcome! Feel free to open issues or submit pull requests to improve Putarr.
+
+## License
+This project is licensed under the MIT License.
