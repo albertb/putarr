@@ -6,7 +6,6 @@ Putarr is a tool that integrates with Put.io to download and manage your Radarr 
 - **Put.io Integration**: Uses Put.io to torrent your media seamlessly.
 - **Transmission API**: Exposes a Transmission API for easy integration with Radarr and Sonarr. Adding support for Lidarr and other *arrs would be straightforward.
 - **Janitor Service**: Automatically cleans up Put.io transfers after successful media import to avoid clutter.
-- **Downloader Service**: Downloads media locally from Put.io after a successful torrent transfer. Alternatively, mount your Put.io account with [rclone](http://rclone.org/) and let Radarr/Sonarr/etc. read directly from the drive.
 
 ## Installation
 
@@ -34,18 +33,13 @@ docker run -d \
 Create a configuration file at `$HOME/.config/putarr/config.yaml` with the following structure:
 
 ```yaml
-downloader:
-  # Path to download media locally after a Put.io torrent is done transferring. Leave unset to skip downloading and rely
-  # on an rclone mount instead.
-  dir: /path/to/download
-
 transmission:
   # Credentials for clients (e.g., Radarr/Sonarr) to communicate with Putarr.
   username: your_username
   password: your_password
 
-  # Path where downloads are available from the perspective of Radarr/Sonarr. This is either the path you've configured
-  # in the downloader section, or the path where you've mounted your Put.io account using rclone.
+  # Path where downloads are available from the perspective of Radarr/Sonarr. This is the path where you've mounted your
+  # Put.io account using rclone.
   download_dir: /path/to/download
 
 putio:

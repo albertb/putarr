@@ -38,11 +38,8 @@ func TestTransmissionRPC_AuthAndSessionMiddleware(t *testing.T) {
 	fakePutio := fakes.NewFakePutio()
 	defer fakePutio.Close()
 
-	fakeDownloader := fakes.NewFakeDownloader()
-
 	server := httptest.NewServer(NewServer(config, token,
-		NewPutioProxy(config, fakePutio.NewClient(), fakeDownloader),
-		fakeDownloader))
+		NewPutioProxy(config, fakePutio.NewClient())))
 	defer server.Close()
 
 	for _, tt := range []struct {
@@ -179,11 +176,8 @@ func TestTransmissionRPC_GetSession(t *testing.T) {
 	fakePutio := fakes.NewFakePutio()
 	defer fakePutio.Close()
 
-	fakeDownloader := fakes.NewFakeDownloader()
-
 	server := httptest.NewServer(NewServer(config, token,
-		NewPutioProxy(config, fakePutio.NewClient(), fakeDownloader),
-		fakeDownloader))
+		NewPutioProxy(config, fakePutio.NewClient())))
 	defer server.Close()
 
 	got := doRPCAndExpectOK[Session](t, config, server.URL, token, "session-get", nil)
@@ -222,11 +216,8 @@ func TestTransmissionRPC_TorrentAddWithBadDir(t *testing.T) {
 	}
 	config.Putio.ParentDirID = folder.ID
 
-	fakeDownloader := fakes.NewFakeDownloader()
-
 	server := httptest.NewServer(NewServer(config, token,
-		NewPutioProxy(config, fakePutio.NewClient(), fakeDownloader),
-		fakeDownloader))
+		NewPutioProxy(config, fakePutio.NewClient())))
 	defer server.Close()
 
 	// Attempting to start a download with a download-dir that isn't a child of the configured download-dir should
@@ -275,11 +266,8 @@ func TestTransmissionRPC_TorrentAddGetRemove(t *testing.T) {
 	}
 	config.Putio.ParentDirID = folder.ID
 
-	fakeDownloader := fakes.NewFakeDownloader()
-
 	server := httptest.NewServer(NewServer(config, token,
-		NewPutioProxy(config, fakePutio.NewClient(), fakeDownloader),
-		fakeDownloader))
+		NewPutioProxy(config, fakePutio.NewClient())))
 	defer server.Close()
 
 	// Initially the list of torrents is empty.
@@ -329,9 +317,9 @@ func TestTransmissionRPC_TorrentAddGetRemove(t *testing.T) {
 		}
 	}
 	for id, dir := range map[int]string{
-		torrent1.ID: fmt.Sprintf("/putarr/tv-sonarr/%d", torrent1.ID),
-		torrent2.ID: fmt.Sprintf("/putarr/tv-sonarr/whatever/%d", torrent2.ID),
-		torrent3.ID: fmt.Sprintf("/putarr/tv-sonarr/%d", torrent3.ID)} {
+		torrent1.ID: "/putarr/tv-sonarr",
+		torrent2.ID: "/putarr/tv-sonarr/whatever",
+		torrent3.ID: "/putarr/tv-sonarr"} {
 		if torrent, ok := torrentsByID[id]; !ok {
 			t.Fatalf("missing torrent with ID %v", id)
 		} else {
@@ -343,32 +331,6 @@ func TestTransmissionRPC_TorrentAddGetRemove(t *testing.T) {
 
 	// Mark the second torrent as completed, and keep track of the file ID that was downloaded.
 	fileID, _ := fakePutio.SetTransferCompleted(int64(torrent2.ID))
-
-	// Get the list again, it should still have three torrents. The second torrent shouldn't be finished yet since it
-	// hasn't been downloaded yet.
-	torrents = doRPCAndExpectOK[map[string][]Torrent](t, config, server.URL, token, "torrent-get", nil)
-
-	if got, want := len(torrents["torrents"]), 3; got != want {
-		t.Fatalf("got a list of %v torrents, want %v", got, want)
-	}
-	torrentsByID = mapTorrentsByID(torrents["torrents"])
-
-	// Make sure only the second torrent is finished.
-	for id, finished := range map[int]bool{
-		torrent1.ID: false,
-		torrent2.ID: false,
-		torrent3.ID: false} {
-		if torrent, ok := torrentsByID[id]; !ok {
-			t.Fatalf("missing torrent with ID %v", id)
-		} else {
-			if got, want := torrent.IsFinished, finished; got != want {
-				t.Fatalf("got torrent[%d].IsFinished = %v, want %v", id, got, want)
-			}
-		}
-	}
-
-	// Mark the torrent2 download as finished: that torrent is now complete.
-	fakeDownloader.MarkDownloadFinished(int64(torrent2.ID))
 
 	// Get the list again, the second torrent should be completed.
 	torrents = doRPCAndExpectOK[map[string][]Torrent](t, config, server.URL, token, "torrent-get", nil)
@@ -421,11 +383,6 @@ func TestTransmissionRPC_TorrentAddGetRemove(t *testing.T) {
 	if got, want := fakePutio.GetAllDeletedFileIDs(), []int64{fileID}; !cmp.Equal(got, want, sliceOpts) {
 		t.Fatalf("got deleted file IDs %v, want %v", got, want)
 	}
-
-	// Also expect the downloaded files to have been deleted.
-	if got, want := fakeDownloader.DownloadFilesWereRemoved(int64(torrent2.ID)), true; got != want {
-		t.Fatalf("got download cleanup status %t, want %t", got, want)
-	}
 }
 
 func TestTransmissionRPC_TorrentAddGetWithFriendToken(t *testing.T) {
@@ -468,17 +425,13 @@ func TestTransmissionRPC_TorrentAddGetWithFriendToken(t *testing.T) {
 	}
 	configB.Putio.ParentDirID = folderB.ID
 
-	fakeDownloader := fakes.NewFakeDownloader()
-
 	// Setup two putarr servers that share the same Put.io account, but use the two different friend tokens.
 	serverA := httptest.NewServer(NewServer(configA, token,
-		NewPutioProxy(configA, fakePutio.NewClient(), fakeDownloader),
-		fakeDownloader))
+		NewPutioProxy(configA, fakePutio.NewClient())))
 	defer serverA.Close()
 
 	serverB := httptest.NewServer(NewServer(configB, token,
-		NewPutioProxy(configB, fakePutio.NewClient(), fakeDownloader),
-		fakeDownloader))
+		NewPutioProxy(configB, fakePutio.NewClient())))
 	defer serverB.Close()
 
 	// Initially the list of torrents is empty for both servers.
@@ -559,12 +512,9 @@ func TestTransmissionRPC_TorrentAddWithTorrentFile(t *testing.T) {
 	}
 	config.Putio.ParentDirID = folder.ID
 
-	fakeDownloader := fakes.NewFakeDownloader()
-
 	server := httptest.NewServer(
 		NewServer(config, token,
-			NewPutioProxy(config, fakePutio.NewClient(), fakeDownloader),
-			fakeDownloader))
+			NewPutioProxy(config, fakePutio.NewClient())))
 	defer server.Close()
 
 	// A minimal torrent file.

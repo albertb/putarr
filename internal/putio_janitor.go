@@ -10,14 +10,12 @@ import (
 type PutioJanitor struct {
 	arrClient  *ArrClient
 	putioProxy *PutioProxy
-	downloader Downloader
 }
 
-func NewPutioJanitor(arrClient *ArrClient, putioProxy *PutioProxy, downloader Downloader) *PutioJanitor {
+func NewPutioJanitor(arrClient *ArrClient, putioProxy *PutioProxy) *PutioJanitor {
 	return &PutioJanitor{
 		arrClient:  arrClient,
 		putioProxy: putioProxy,
-		downloader: downloader,
 	}
 }
 
@@ -84,14 +82,6 @@ func (j *PutioJanitor) RunOnce(ctx context.Context) ([]int64, error) {
 		err = j.putioProxy.RemoveTransfers(ctx, true, completedTransferIDs...)
 		if err != nil {
 			return completedTransferIDs, err
-		}
-		if j.downloader != nil {
-			for _, id := range completedTransferIDs {
-				err = j.downloader.RemoveFiles(id)
-				if err != nil {
-					return completedTransferIDs, fmt.Errorf("failed to remove files for transfer ID `%d`: %w", id, err)
-				}
-			}
 		}
 	}
 

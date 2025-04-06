@@ -22,19 +22,14 @@ func run(addr string, config *internal.Config) error {
 	putioClient := newPutioClient(ctx, config)
 	arrClient := newArrClient(config)
 
-	var downloader internal.Downloader
-	if config.Downloader.Dir != "" {
-		downloader = internal.NewDownloader(config, putioClient)
-	}
+	putioProxy := internal.NewPutioProxy(config, putioClient)
 
-	putioProxy := internal.NewPutioProxy(config, putioClient, downloader)
-
-	janitor := internal.NewPutioJanitor(arrClient, putioProxy, downloader)
+	janitor := internal.NewPutioJanitor(arrClient, putioProxy)
 	janitor.RunAtInterval(ctx, config.Putio.JanitorInterval)
 
 	log.Println("listening on", addr)
 
-	s := internal.NewServer(config, "whatever", putioProxy, downloader)
+	s := internal.NewServer(config, "whatever", putioProxy)
 	return http.ListenAndServe(addr, s)
 }
 

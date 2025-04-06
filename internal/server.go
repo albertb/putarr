@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-func NewServer(config *Config, token string, putioProxy *PutioProxy, downloader Downloader) http.Handler {
+func NewServer(config *Config, token string, putioProxy *PutioProxy) http.Handler {
 	mux := http.NewServeMux()
 
 	mux.Handle("GET /transmission/rpc", http.HandlerFunc(
@@ -17,7 +17,7 @@ func NewServer(config *Config, token string, putioProxy *PutioProxy, downloader 
 		func(w http.ResponseWriter, r *http.Request) {},
 	))
 
-	mux.Handle("POST /transmission/rpc", handlePostRPC(config.Transmission.DownloadDir, putioProxy, downloader))
+	mux.Handle("POST /transmission/rpc", handlePostRPC(config.Transmission.DownloadDir, putioProxy))
 
 	return basicAuthMiddleware(
 		config.Transmission.Username,
@@ -25,7 +25,7 @@ func NewServer(config *Config, token string, putioProxy *PutioProxy, downloader 
 		dumbSessionMiddleware(token, mux))
 }
 
-func handlePostRPC(downloadDir string, putioProxy *PutioProxy, downloader Downloader) http.Handler {
+func handlePostRPC(downloadDir string, putioProxy *PutioProxy) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var request Request
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
@@ -108,14 +108,6 @@ func handlePostRPC(downloadDir string, putioProxy *PutioProxy, downloader Downlo
 				log.Println("failed to remove transfers on Put.io:", err)
 				http.Error(w, "Internal server error", http.StatusInternalServerError)
 				return
-			}
-			for _, transferID := range transferIDs {
-				err = downloader.RemoveFiles(transferID)
-				if err != nil {
-					log.Println("failed to remove files:", err)
-					http.Error(w, "Internal server error", http.StatusInternalServerError)
-					return
-				}
 			}
 		default:
 			log.Printf("unexpected method: %+v", request)

@@ -31,10 +31,9 @@ func TestJanitor(t *testing.T) {
 	defer fakeArrs.Close()
 
 	arrClient := NewArrClient(config, fakeArrs.NewRadarrClient(), fakeArrs.NewSonarrClient())
-	putioProxy := NewPutioProxy(config, fakePutio.NewClient(), fakes.NewFakeDownloader())
-	fakeDownloader := fakes.NewFakeDownloader()
+	putioProxy := NewPutioProxy(config, fakePutio.NewClient())
 
-	janitor := NewPutioJanitor(arrClient, putioProxy, fakeDownloader)
+	janitor := NewPutioJanitor(arrClient, putioProxy)
 
 	// Start by adding in-progress transfers for a movie and some episodes.
 	movieTransfer, err := putioProxy.AddTransfer(ctx, "magnet:?xt=urn:btih:AAA&dn=movie", "/")
@@ -93,10 +92,6 @@ func TestJanitor(t *testing.T) {
 		t.Fatalf("got %v deleted file IDs, want %v", got, want)
 	}
 
-	if got, want := fakeDownloader.DownloadFilesWereRemoved(movieTransfer.ID), true; got != want {
-		t.Fatalf("got download cleanup status %t, want %t", got, want)
-	}
-
 	// The show transfer is complete, and some but not all of the imports are done.
 	showFileID, _ := fakePutio.SetTransferCompleted(showTransfer.ID)
 	fakeArrs.RemoveSonarrQueueRecord(showQueueIDs[0])
@@ -131,9 +126,5 @@ func TestJanitor(t *testing.T) {
 	// Expect both the movie and the show files to have been deleted.
 	if got, want := fakePutio.GetAllDeletedFileIDs(), []int64{movieFileID, showFileID}; !cmp.Equal(got, want, sliceOpts) {
 		t.Fatalf("got deleted files %v, want %v", got, want)
-	}
-
-	if got, want := fakeDownloader.DownloadFilesWereRemoved(showTransfer.ID), true; got != want {
-		t.Fatalf("got download cleanup status %t, want %t", got, want)
 	}
 }

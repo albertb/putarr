@@ -27,14 +27,12 @@ type Transfer struct {
 type PutioProxy struct {
 	config      *Config
 	putioClient *putio.Client
-	downloader  Downloader
 }
 
-func NewPutioProxy(config *Config, putioClient *putio.Client, downloader Downloader) *PutioProxy {
+func NewPutioProxy(config *Config, putioClient *putio.Client) *PutioProxy {
 	return &PutioProxy{
 		config:      config,
 		putioClient: putioClient,
-		downloader:  downloader,
 	}
 }
 
@@ -118,23 +116,6 @@ func (p *PutioProxy) GetTransfers(ctx context.Context) ([]Transfer, error) {
 		}
 
 		downloadDir := extra.DownloadDir
-		if p.downloader != nil {
-			downloadDir = fmt.Sprintf("%s/%d", extra.DownloadDir, transfer.ID)
-			if transfer.FinishedAt != nil {
-				if !p.downloader.IsDownloadFinished(transfer.ID) {
-					subpath := strings.TrimPrefix(extra.DownloadDir, p.config.Transmission.DownloadDir)
-					subpath = fmt.Sprintf("%s/%d", subpath, transfer.ID)
-
-					p.downloader.ScheduleDownload(transfer.ID, subpath)
-
-					// Pretend the transfer is still going until the file has been downloaded locally.
-					transfer.Downloaded--
-					transfer.Status = "DOWNLOADING"
-					transfer.FinishedAt = nil
-				}
-			}
-		}
-
 		result = append(result, Transfer{
 			Transfer:    &transfer,
 			DownloadDir: downloadDir,
