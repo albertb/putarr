@@ -158,14 +158,12 @@ func (p *PutioProxy) RemoveTransfers(ctx context.Context, removeFiles bool, ids 
 }
 
 func (p *PutioProxy) assembleTransfer(ctx context.Context, transfer putio.Transfer, downloadDir string) (Transfer, error) {
-	var result Transfer
-
 	// Default to the original name from the torrent, but once the files are available, get the actual file name.
 	name := transfer.Name
 	if transfer.FileID > 0 {
 		file, err := p.putioClient.Files.Get(ctx, transfer.FileID)
 		if err != nil {
-			return result, fmt.Errorf("cannot get file for transfer with ID `%d`: %w", transfer.ID, err)
+			log.Printf("cannot get file for transfer with ID `%d`: %s", transfer.ID, err)
 		} else {
 			name = file.Name
 		}

@@ -110,7 +110,7 @@ func NewFakePutio() *FakePutio {
 
 		file, ok := fake.files[parentID]
 		if !ok {
-			return result, fmt.Errorf("unknown file: %d", parentID)
+			return result, fmt.Errorf("file with ID `%d` not found", parentID)
 		}
 
 		result = *file
@@ -131,18 +131,13 @@ func NewFakePutio() *FakePutio {
 			return result, fmt.Errorf("failed to parse ID path value in URL: %w", err)
 		}
 
-		// Traverse all files to find the one with the given ID.
-		// TODO: Make this a direct map lookup instead.
-		for _, parent := range fake.files {
-			for _, file := range parent.Files {
-				if file.ID == fileID {
-					result.File = *file
-					return result, nil
-				}
-			}
+		file, ok := fake.files[fileID]
+		if !ok {
+			return result, fmt.Errorf("file with ID `%d` not found", fileID)
 		}
 
-		return result, fmt.Errorf("file with ID `%d` not found", fileID)
+		result.File = file.Parent
+		return result, nil
 	}))
 
 	mux.Handle("POST /v2/files/create-folder", handleJSONRPC(func(r *http.Request) (putioFile, error) {
@@ -343,24 +338,6 @@ func (s *FakePutio) createFolder(parentID int64, name string) (putioFile, error)
 	return folder, nil
 }
 
-func (s *FakePutio) createFile(parentID int64, name string) (putio.File, error) {
-	var result putio.File
-
-	parent, ok := s.files[parentID]
-	if !ok {
-		return result, fmt.Errorf("file with ID %v not found", parentID)
-	}
-
-	file := putio.File{
-		ID:       atomic.AddInt64(&s.fileID, 1),
-		ParentID: parentID,
-		Name:     name,
-	}
-
-	parent.Files = append(parent.Files, &file)
-	return file, nil
-}
-
 func (s *FakePutio) CreateFolder(parentID int64, name string) (putio.File, error) {
 	folder, err := s.createFolder(parentID, name)
 	if err != nil {
@@ -376,7 +353,7 @@ func (s *FakePutio) SetTransferCompleted(id int64, name string) (int64, error) {
 		return 0, fmt.Errorf("unknown transfer ID: %d", id)
 	}
 
-	file, err := s.createFile(0, name)
+	file, err := s.createFolder(0, name)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create file for transfer ID `%d`: %w", id, err)
 	}
@@ -384,7 +361,7 @@ func (s *FakePutio) SetTransferCompleted(id int64, name string) (int64, error) {
 	transfer.FinishedAt = &putioTime{Time: time.Now()}
 	transfer.PercentDone = 100
 	transfer.Status = "COMPLETED"
-	transfer.FileID = file.ID
+	transfer.FileID = file.Parent.ID
 	return transfer.FileID, nil
 }
 
