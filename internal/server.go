@@ -80,6 +80,7 @@ func handlePostRPC(downloadDir string, putioProxy *PutioProxy) http.Handler {
 				return
 			}
 			result = convertFromPutioTransfer(transfer)
+			log.Printf("torrent-add: %+v\n", result)
 		case "torrent-get":
 			transfers, err := putioProxy.GetTransfers(r.Context())
 			if err != nil {

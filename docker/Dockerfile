@@ -1,9 +1,9 @@
 # Copy sources to a builder image and build the binary for the Raspberry Pi.
-FROM golang:1.23 AS builder
+FROM golang:latest AS builder
 WORKDIR /go/src/github.com/albertb/putarr
 COPY . .
 RUN go mod tidy
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o putarr ./cmd/main.go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o putarr ./cmd/server/main.go
 
 # Copy the binary to a new image.
 FROM arm64v8/alpine:latest
