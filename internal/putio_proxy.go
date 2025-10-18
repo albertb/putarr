@@ -21,6 +21,7 @@ import (
 type Transfer struct {
 	*putio.Transfer
 	DownloadDir string
+	FileName    string
 }
 
 // PutioProxy proxies Transmission API RPCs to Put.io.
@@ -53,8 +54,11 @@ func (p *PutioProxy) AddTransfer(ctx context.Context, magnet, downloadDir string
 		return result, err
 	}
 
-	result.Transfer = &transfer
-	result.DownloadDir = fmt.Sprintf("%s/%d", downloadDir, transfer.ID)
+	downloadDir = fmt.Sprintf("%s/%d", downloadDir, transfer.ID)
+	result, err = p.assembleTransfer(ctx, transfer, downloadDir)
+	if err != nil {
+		return result, fmt.Errorf("failed to assemble transfer with ID `%d`: %w", transfer.ID, err)
+	}
 	return result, nil
 }
 
@@ -104,6 +108,7 @@ func (p *PutioProxy) UploadTorrent(ctx context.Context, file []byte, downloadDir
 
 func (p *PutioProxy) GetTransfers(ctx context.Context) ([]Transfer, error) {
 	var result []Transfer
+
 	transfers, err := p.putioClient.Transfers.List(ctx)
 	if err != nil {
 		return result, err
@@ -115,12 +120,15 @@ func (p *PutioProxy) GetTransfers(ctx context.Context) ([]Transfer, error) {
 			continue
 		}
 
-		downloadDir := extra.DownloadDir
-		result = append(result, Transfer{
-			Transfer:    &transfer,
-			DownloadDir: downloadDir,
-		})
+		assembled, err := p.assembleTransfer(ctx, transfer, extra.DownloadDir)
+		if err != nil {
+			log.Println("cannot assemble transfer, skipping transfer:", err)
+			continue
+		}
+
+		result = append(result, assembled)
 	}
+
 	return result, nil
 }
 
@@ -147,6 +155,27 @@ func (p *PutioProxy) RemoveTransfers(ctx context.Context, removeFiles bool, ids 
 		}
 	}
 	return nil
+}
+
+func (p *PutioProxy) assembleTransfer(ctx context.Context, transfer putio.Transfer, downloadDir string) (Transfer, error) {
+	var result Transfer
+
+	// Default to the original name from the torrent, but once the files are available, get the actual file name.
+	name := transfer.Name
+	if transfer.FileID > 0 {
+		file, err := p.putioClient.Files.Get(ctx, transfer.FileID)
+		if err != nil {
+			return result, fmt.Errorf("cannot get file for transfer with ID `%d`: %w", transfer.ID, err)
+		} else {
+			name = file.Name
+		}
+	}
+
+	return Transfer{
+		Transfer:    &transfer,
+		DownloadDir: downloadDir,
+		FileName:    name,
+	}, nil
 }
 
 // Treat path as relative to the configured download path. Create the missing sub-directories if necessary and returns

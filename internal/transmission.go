@@ -69,7 +69,7 @@ func convertFromPutioTransfer(transfer Transfer) Torrent {
 	return Torrent{
 		ID:                 int(transfer.ID),
 		HashString:         &hash,
-		Name:               transfer.Name,
+		Name:               transfer.FileName,
 		DownloadDir:        transfer.DownloadDir,
 		TotalSize:          int64(transfer.Size),
 		LeftUntilDone:      int64(transfer.Size) - transfer.Downloaded,

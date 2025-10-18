@@ -330,7 +330,7 @@ func TestTransmissionRPC_TorrentAddGetRemove(t *testing.T) {
 	}
 
 	// Mark the second torrent as completed, and keep track of the file ID that was downloaded.
-	fileID, _ := fakePutio.SetTransferCompleted(int64(torrent2.ID))
+	fileID, _ := fakePutio.SetTransferCompleted(int64(torrent2.ID), "Whatever.S01E01.mkv")
 
 	// Get the list again, the second torrent should be completed.
 	torrents = doRPCAndExpectOK[map[string][]Torrent](t, config, server.URL, token, "torrent-get", nil)
@@ -350,6 +350,20 @@ func TestTransmissionRPC_TorrentAddGetRemove(t *testing.T) {
 		} else {
 			if got, want := torrent.IsFinished, finished; got != want {
 				t.Fatalf("got torrent[%d].IsFinished = %v, want %v", id, got, want)
+			}
+		}
+	}
+
+	// Make sure the name of the second torrent was updated to reflect the actual file name.
+	for id, name := range map[int]string{
+		torrent1.ID: "foo",
+		torrent2.ID: "Whatever.S01E01.mkv",
+		torrent3.ID: "baz"} {
+		if torrent, ok := torrentsByID[id]; !ok {
+			t.Fatalf("missing torrent with ID %v", id)
+		} else {
+			if got, want := torrent.Name, name; got != want {
+				t.Errorf("got torrent[%d].Name = %v, want %v", id, got, want)
 			}
 		}
 	}

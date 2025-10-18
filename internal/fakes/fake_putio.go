@@ -117,6 +117,34 @@ func NewFakePutio() *FakePutio {
 		return result, nil
 	}))
 
+	type fileInfo struct{ File putio.File }
+	mux.Handle("GET /v2/files/{id}", handleJSONRPC(func(r *http.Request) (fileInfo, error) {
+		var result fileInfo
+
+		id := r.PathValue("id")
+		if id == "" {
+			return result, errors.New("missing key in URL")
+		}
+
+		fileID, err := strconv.ParseInt(id, 10, 64)
+		if err != nil {
+			return result, fmt.Errorf("failed to parse ID path value in URL: %w", err)
+		}
+
+		// Traverse all files to find the one with the given ID.
+		// TODO: Make this a direct map lookup instead.
+		for _, parent := range fake.files {
+			for _, file := range parent.Files {
+				if file.ID == fileID {
+					result.File = *file
+					return result, nil
+				}
+			}
+		}
+
+		return result, fmt.Errorf("file with ID `%d` not found", fileID)
+	}))
+
 	mux.Handle("POST /v2/files/create-folder", handleJSONRPC(func(r *http.Request) (putioFile, error) {
 		var result putioFile
 
@@ -315,6 +343,24 @@ func (s *FakePutio) createFolder(parentID int64, name string) (putioFile, error)
 	return folder, nil
 }
 
+func (s *FakePutio) createFile(parentID int64, name string) (putio.File, error) {
+	var result putio.File
+
+	parent, ok := s.files[parentID]
+	if !ok {
+		return result, fmt.Errorf("file with ID %v not found", parentID)
+	}
+
+	file := putio.File{
+		ID:       atomic.AddInt64(&s.fileID, 1),
+		ParentID: parentID,
+		Name:     name,
+	}
+
+	parent.Files = append(parent.Files, &file)
+	return file, nil
+}
+
 func (s *FakePutio) CreateFolder(parentID int64, name string) (putio.File, error) {
 	folder, err := s.createFolder(parentID, name)
 	if err != nil {
@@ -324,15 +370,21 @@ func (s *FakePutio) CreateFolder(parentID int64, name string) (putio.File, error
 }
 
 // SetTransferCompleted marks the transfer with the given ID as completed, gives it a file ID, and returns it.
-func (s *FakePutio) SetTransferCompleted(id int64) (int64, error) {
+func (s *FakePutio) SetTransferCompleted(id int64, name string) (int64, error) {
 	transfer, ok := s.transfers[id]
 	if !ok {
 		return 0, fmt.Errorf("unknown transfer ID: %d", id)
 	}
+
+	file, err := s.createFile(0, name)
+	if err != nil {
+		return 0, fmt.Errorf("failed to create file for transfer ID `%d`: %w", id, err)
+	}
+
 	transfer.FinishedAt = &putioTime{Time: time.Now()}
 	transfer.PercentDone = 100
 	transfer.Status = "COMPLETED"
-	transfer.FileID = atomic.AddInt64(&s.fileID, 1)
+	transfer.FileID = file.ID
 	return transfer.FileID, nil
 }
 

@@ -68,7 +68,7 @@ func TestJanitor(t *testing.T) {
 	}
 
 	// The movie import is complete: mark the transfer as completed, remove the queue record, and add a history record.
-	movieFileID, _ := fakePutio.SetTransferCompleted(movieTransfer.ID)
+	movieFileID, _ := fakePutio.SetTransferCompleted(movieTransfer.ID, "Movie.mkv")
 	fakeArrs.RemoveRadarrQueueRecord(movieQueueID)
 	fakeArrs.AddRadarrHistoryRecord(radarr.HistoryRecord{MovieID: 123, DownloadID: FormatTorrentHash(movieTransfer.ID)})
 
@@ -93,7 +93,7 @@ func TestJanitor(t *testing.T) {
 	}
 
 	// The show transfer is complete, and some but not all of the imports are done.
-	showFileID, _ := fakePutio.SetTransferCompleted(showTransfer.ID)
+	showFileID, _ := fakePutio.SetTransferCompleted(showTransfer.ID, "Episode.S01E01.mkv")
 	fakeArrs.RemoveSonarrQueueRecord(showQueueIDs[0])
 	fakeArrs.AddSonarrHistoryRecord(sonarr.HistoryRecord{EpisodeID: 100, DownloadID: FormatTorrentHash(showTransfer.ID)})
 

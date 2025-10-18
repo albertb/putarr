@@ -38,14 +38,12 @@ func handlePostRPC(downloadDir string, putioProxy *PutioProxy) http.Handler {
 		var result any
 		switch request.Method {
 		case "session-get":
-			log.Println("session-get")
 			result = Session{
 				RPCVersion:  "18",
 				Version:     "14.0.0",
 				DownloadDir: downloadDir,
 			}
 		case "torrent-add":
-			log.Println("torrent-add")
 			// The download-dir argument is an optional string.
 			dir, ok := request.Arguments["download-dir"].(string)
 			if !ok {
@@ -83,7 +81,6 @@ func handlePostRPC(downloadDir string, putioProxy *PutioProxy) http.Handler {
 			}
 			result = convertFromPutioTransfer(transfer)
 		case "torrent-get":
-			log.Println("torrent-get")
 			transfers, err := putioProxy.GetTransfers(r.Context())
 			if err != nil {
 				log.Println("failed to list Put.io transfers:", err)
@@ -96,7 +93,6 @@ func handlePostRPC(downloadDir string, putioProxy *PutioProxy) http.Handler {
 			}
 			result = map[string][]Torrent{"torrents": torrents}
 		case "torrent-remove":
-			log.Println("torrent-remove")
 			deleteFiles, transferIDs, err := parseTorrentRemoveArgs(request.Arguments)
 			if err != nil {
 				log.Println("failed to parse arguments:", err)
