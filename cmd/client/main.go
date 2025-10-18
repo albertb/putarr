@@ -87,5 +87,5 @@ func main() {
 		log.Fatalln("failed to indent JSON:", err)
 	}
 
-	log.Println("response:\n", response.String())
+	log.Printf("response:\n%s", response.String())
 }
