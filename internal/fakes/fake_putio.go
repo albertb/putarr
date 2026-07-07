@@ -176,8 +176,8 @@ func NewFakePutio() *FakePutio {
 			return nil, errors.New("missing file_ids form value")
 		}
 
-		fileIDs := strings.Split(allFileIDs, ",")
-		for _, fileID := range fileIDs {
+		fileIDs := strings.SplitSeq(allFileIDs, ",")
+		for fileID := range fileIDs {
 			id, err := strconv.ParseInt(fileID, 10, 64)
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse file ID `%s`: %w", fileID, err)
@@ -265,8 +265,8 @@ func NewFakePutio() *FakePutio {
 			return nil, err
 		}
 		idsVal := r.FormValue("transfer_ids")
-		ids := strings.Split(idsVal, ",")
-		for _, idStr := range ids {
+		ids := strings.SplitSeq(idsVal, ",")
+		for idStr := range ids {
 			id, err := strconv.ParseInt(idStr, 10, 64)
 			if err != nil {
 				return nil, fmt.Errorf("failed to parse transfer ID `%s`: %w", idStr, err)
@@ -289,8 +289,8 @@ func NewFakePutio() *FakePutio {
 			return result, err
 		}
 		idsVal := r.FormValue("file_ids")
-		ids := strings.Split(idsVal, ",")
-		for _, id := range ids {
+		ids := strings.SplitSeq(idsVal, ",")
+		for id := range ids {
 			fileID, err := strconv.ParseInt(id, 10, 64)
 			if err != nil {
 				return result, err

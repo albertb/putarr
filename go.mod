@@ -1,6 +1,6 @@
 module github.com/albertb/putarr
 
-go 1.23.2
+go 1.26
 
 require (
 	github.com/google/go-cmp v0.7.0

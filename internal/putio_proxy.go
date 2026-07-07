@@ -73,7 +73,7 @@ func (p *PutioProxy) UploadTorrent(ctx context.Context, file []byte, downloadDir
 	if err != nil {
 		return transfer, fmt.Errorf("failed to decode torrent file: %w", err)
 	}
-	torrent, ok := decoded.(map[string]interface{})
+	torrent, ok := decoded.(map[string]any)
 	if !ok {
 		return transfer, errors.New("unable to parse torrent file")
 	}
@@ -88,7 +88,7 @@ func (p *PutioProxy) UploadTorrent(ctx context.Context, file []byte, downloadDir
 	magnet := "magnet:?xt=urn:btih:" + base32.StdEncoding.EncodeToString(checksum[:])
 
 	// Add the name and length of the torrent to the magnet link, if available.
-	if info, ok := torrent["info"].(map[string]interface{}); ok {
+	if info, ok := torrent["info"].(map[string]any); ok {
 		if name, ok := info["name"].(string); ok {
 			magnet += "&dn=" + url.QueryEscape(name)
 		}
@@ -197,9 +197,9 @@ func (p *PutioProxy) createAndReturnDirID(ctx context.Context, path string) (int
 	}
 
 	// Split the subpath into individual directories and walk the Put.io tree to create the missing ones.
-	parts := strings.Split(subpath, string(filepath.Separator))
+	parts := strings.SplitSeq(subpath, string(filepath.Separator))
 
-	for _, part := range parts {
+	for part := range parts {
 		children, _, err := p.putioClient.Files.List(ctx, dir)
 		if err != nil {
 			return dir, fmt.Errorf("failed to list files on Put.io: %w", err)

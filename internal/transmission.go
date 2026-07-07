@@ -11,8 +11,8 @@ import (
 )
 
 type Request struct {
-	Method    string                 `json:"method"`
-	Arguments map[string]interface{} `json:"arguments,omitempty"`
+	Method    string         `json:"method"`
+	Arguments map[string]any `json:"arguments,omitempty"`
 }
 
 type Response struct {
